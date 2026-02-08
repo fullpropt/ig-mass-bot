@@ -43,10 +43,11 @@ const startServer = (manager) => {
   });
 
   app.post('/bots/add', async (req, res) => {
-    const { username, password, proxy } = req.body;
-    if (!username || !password) return res.status(400).send('username/password obrigatórios');
+    const { username, password, proxy, cookie } = req.body;
+    if (!username) return res.status(400).send('username obrigatório');
+    if (!password && !cookie) return res.status(400).send('informe senha ou cookie');
     try {
-      await manager.addBot({ username, password, proxy });
+      await manager.addBot({ username, password, proxy, cookie });
       return res.redirect('/dashboard');
     } catch (err) {
       // Retorna erro sem derrubar o servidor (evita 502)

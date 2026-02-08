@@ -103,11 +103,18 @@
             </div>
             <div class="field">
               <label class="label">Senha</label>
-              <div class="control"><input class="input" type="password" name="password" required></div>
+              <div class="control"><input class="input" type="password" name="password" placeholder="Opcional se usar cookie"></div>
             </div>
             <div class="field">
               <label class="label">Proxy (opcional)</label>
               <div class="control"><input class="input" name="proxy" placeholder="http://user:pass@ip:port"></div>
+            </div>
+            <div class="field">
+              <label class="label">Cookie (opcional)</label>
+              <div class="control">
+                <textarea class="textarea" name="cookie" rows="3" placeholder="Cole o cookie completo (sessionid=...; csrftoken=...; ...)"></textarea>
+              </div>
+              <p class="help">Se preencher, a conta tentará logar via cookie e salvará sessão. Informe senha apenas se quiser fallback.</p>
             </div>
             <div class="field">
               <button class="button is-link">Adicionar</button>

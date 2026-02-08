@@ -1,6 +1,6 @@
 import settings from './settings.js';
 import ProxyManager from './proxyManager.js';
-import { login, refreshCookies, createAccount } from './auth.js';
+import { login, loginWithCookie, refreshCookies, createAccount } from './auth.js';
 import { createLogger } from './utils/logger.js';
 import MassSender from './massSender.js';
 import startServer from './server.js';
@@ -48,6 +48,7 @@ class Bot {
   constructor(account, proxyManager) {
     this.username = account.username;
     this.password = account.password;
+    this.cookie = account.cookie;
     this.email = account.email;
     this.proxyManager = proxyManager;
     this.proxy = proxyManager.getSticky(account.username);
@@ -60,7 +61,11 @@ class Bot {
 
   async init() {
     this.proxy = this.proxyManager.getSticky(this.username);
-    this.ig = await login({ username: this.username, password: this.password, proxy: this.proxy }, this.logger);
+    if (this.cookie) {
+      this.ig = await loginWithCookie({ username: this.username, cookie: this.cookie, proxy: this.proxy }, this.logger);
+    } else {
+      this.ig = await login({ username: this.username, password: this.password, proxy: this.proxy }, this.logger);
+    }
     refreshCookies(this.ig, this.username, this.logger);
     this.massSender = new MassSender({ ig: this.ig, username: this.username, proxyManager: this.proxyManager, assignedProxy: this.proxy, logger: this.logger });
     this.startAutoReply();
@@ -123,8 +128,8 @@ class BotManager {
     return this.bots.find((b) => b.username === username);
   }
 
-  async addBot({ username, password, proxy }) {
-    const bot = new Bot({ username, password }, this.proxyManager);
+  async addBot({ username, password, proxy, cookie }) {
+    const bot = new Bot({ username, password, cookie }, this.proxyManager);
     if (proxy) bot.proxyManager.goodProxies.unshift(proxy);
     await bot.init();
     this.bots.push(bot);

@@ -46,6 +46,28 @@ export const login = async ({ username, password, proxy }, logger = createLogger
   }
 };
 
+export const loginWithCookie = async ({ username, cookie, proxy }, logger = createLogger(username)) => {
+  const ig = buildClient(username, proxy);
+  try {
+    const loaded = await loadSession(ig, username);
+    if (loaded) {
+      logger.info({ username }, 'Sessão carregada de arquivo (ignorado cookie)');
+      return ig;
+    }
+    const cookieParts = (cookie || '').split(';').map((c) => c.trim()).filter(Boolean);
+    for (const part of cookieParts) {
+      await ig.state.cookieJar.setCookie(part, 'https://i.instagram.com/');
+    }
+    await ig.account.currentUser(); // valida cookie
+    await serializeSession(ig, username);
+    logger.info({ username }, 'Login via cookie e sessão salva');
+    return ig;
+  } catch (err) {
+    logger.error({ err }, 'Falha no login com cookie');
+    throw err;
+  }
+};
+
 export const refreshCookies = (ig, username, logger = createLogger(username)) => {
   setInterval(async () => {
     try {
@@ -93,6 +115,7 @@ export const detectActionBlock = (error) => {
 
 export default {
   login,
+  loginWithCookie,
   refreshCookies,
   createAccount,
   handleCheckpoint,
