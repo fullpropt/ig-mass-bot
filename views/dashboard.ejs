@@ -32,11 +32,14 @@
     <div class="column">
       <div class="box">
         <h3 class="title is-5">Rodar massdm</h3>
-        <form action="/bots/<%= bots[0]?.username %>/massdm" method="post" enctype="multipart/form-data">
+        <form action="/bots/<%= firstBot || 'none' %>/massdm" method="post" enctype="multipart/form-data">
           <div class="field">
             <label class="label">Bot</label>
             <div class="select is-fullwidth">
               <select name="username" onchange="this.form.action='/bots/'+this.value+'/massdm'">
+                <% if (!bots.length) { %>
+                  <option value="">Nenhum bot — adicione ao lado</option>
+                <% } %>
                 <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
               </select>
             </div>
@@ -56,16 +59,17 @@
             <input type="file" name="listfile">
           </div>
           <div class="field"><label class="label">Mídia (opcional)</label><input type="file" name="mediafile"></div>
-          <div class="field"><button class="button is-primary">Iniciar</button></div>
+          <div class="field"><button class="button is-primary" <% if(!bots.length){ %>disabled<% } %>>Iniciar</button></div>
         </form>
       </div>
 
       <div class="box">
         <h3 class="title is-5">Mass Like</h3>
-        <form action="/actions/<%= bots[0]?.username %>/like" method="post">
+        <form action="/actions/<%= firstBot || 'none' %>/like" method="post">
           <div class="field">
             <label class="label">Bot</label>
             <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/like'">
+              <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
               <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
             </select>
           </div>
@@ -76,16 +80,17 @@
             </select>
           </div>
           <div class="field"><label class="label">Limite</label><input class="input" name="limit" value="50"></div>
-          <button class="button is-primary">Mass Like</button>
+          <button class="button is-primary" <% if(!bots.length){ %>disabled<% } %>>Mass Like</button>
         </form>
       </div>
 
       <div class="box">
         <h3 class="title is-5">Mass Comment</h3>
-        <form action="/actions/<%= bots[0]?.username %>/comment" method="post">
+        <form action="/actions/<%= firstBot || 'none' %>/comment" method="post">
           <div class="field">
             <label class="label">Bot</label>
             <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/comment'">
+              <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
               <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
             </select>
           </div>
@@ -97,16 +102,17 @@
           </div>
           <div class="field"><label class="label">Template</label><textarea class="textarea" name="template" rows="2">Nice!</textarea></div>
           <div class="field"><label class="label">Limite</label><input class="input" name="limit" value="20"></div>
-          <button class="button is-link">Mass Comment</button>
+          <button class="button is-link" <% if(!bots.length){ %>disabled<% } %>>Mass Comment</button>
         </form>
       </div>
 
       <div class="box">
         <h3 class="title is-5">Mass Report</h3>
-        <form action="/actions/<%= bots[0]?.username %>/report" method="post">
+        <form action="/actions/<%= firstBot || 'none' %>/report" method="post">
           <div class="field">
             <label class="label">Bot</label>
             <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/report'">
+              <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
               <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
             </select>
           </div>
@@ -115,7 +121,7 @@
           </div>
           <div class="field"><label class="label">Count</label><input class="input" name="count" value="5"></div>
           <div class="field"><label class="label">Reason</label><input class="input" name="reason" value="spam"></div>
-          <button class="button is-danger">Mass Report</button>
+          <button class="button is-danger" <% if(!bots.length){ %>disabled<% } %>>Mass Report</button>
         </form>
       </div>
     </div>

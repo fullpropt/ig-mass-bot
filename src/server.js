@@ -28,8 +28,11 @@ const startServer = (manager) => {
       queued: bot.massSender?.queue?.length || 0,
       proxy: bot.proxy,
     }));
-    const files = fs.readdirSync(settings.listsDir).filter((f) => !f.startsWith('.'));
-    res.render('dashboard', { bots, files, settings, path });
+    const files = fs.existsSync(settings.listsDir)
+      ? fs.readdirSync(settings.listsDir).filter((f) => !f.startsWith('.'))
+      : [];
+    const firstBot = bots[0]?.username || '';
+    res.render('dashboard', { bots, files, settings, path, firstBot });
   });
 
   app.post('/bots/add', async (req, res) => {
