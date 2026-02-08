@@ -1,17 +1,15 @@
-import startServer from './server.js';
-import './workers/dmWorker.js';
-import './workers/signupWorker.js';
-
 const role = process.env.ROLE || 'web';
 
 if (role === 'web') {
+  const startServer = (await import('./server.js')).default; // eslint-disable-line global-require
   startServer();
 } else if (role === 'dm-worker') {
-  // dmWorker imported above auto-starts
+  await import('./workers/dmWorker.js');
   console.log('dm-worker rodando');
 } else if (role === 'signup-worker') {
-  // signupWorker imported above auto-starts
+  await import('./workers/signupWorker.js');
   console.log('signup-worker rodando');
 } else {
+  const startServer = (await import('./server.js')).default;
   startServer();
 }
