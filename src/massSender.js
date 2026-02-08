@@ -43,7 +43,6 @@ export class MassSender extends EventEmitter {
     this.dailyFile = path.join(settings.sessionsDir, `daily-${username}.json`);
     this.hourlyActions = 0;
     this.lastHour = new Date().getHours();
-    this.batchCounter = 0;
     this.stopFlag = false;
     this.cooldownUntil = null;
   }

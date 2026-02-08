@@ -2,14 +2,17 @@ import express from 'express';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
+import { body, validationResult } from 'express-validator';
 import settings from './settings.js';
-import downloader from './utils/downloader.js';
-import { createAccountsBatch } from './accountCreator.js';
+import { dmQueue, signupQueue } from './queue/index.js';
+import { createLogger } from './utils/logger.js';
+import { loadAccounts, saveAccounts } from './utils/cryptoStore.js';
 
 const uploadLists = multer({ dest: path.join(settings.rootDir, 'lists') });
 const uploadSessions = multer({ dest: settings.sessionsDir });
+const logger = createLogger('web');
 
-const startServer = (manager) => {
+const startServer = () => {
   const app = express();
   app.use(express.urlencoded({ extended: true }));
   app.use(express.json());
@@ -17,16 +20,24 @@ const startServer = (manager) => {
   app.set('view engine', 'ejs');
   app.set('views', path.join(settings.rootDir, 'views'));
 
+  // health/ready
+  app.get('/healthz', (_, res) => res.status(200).send('ok'));
+  app.get('/readyz', (_, res) => {
+    if (process.env.KILL_SWITCH === 'true') return res.status(503).send('kill switch');
+    return res.status(200).send('ready');
+  });
+
   app.get('/', (req, res) => res.redirect('/dashboard'));
 
   app.get('/dashboard', (req, res) => {
-    const bots = manager.bots.map((bot) => ({
-      username: bot.username,
-      ready: bot.ready,
-      status: bot.massSender?.status || 'idle',
-      stats: bot.massSender?.stats || {},
-      queued: bot.massSender?.queue?.length || 0,
-      proxy: bot.proxy,
+    const accounts = loadAccounts();
+    const bots = accounts.map((acc) => ({
+      username: acc.username,
+      status: 'idle',
+      stats: {},
+      queued: 0,
+      proxy: '',
+      ready: false,
     }));
     const files = fs.existsSync(settings.listsDir)
       ? fs.readdirSync(settings.listsDir).filter((f) => !f.startsWith('.'))
@@ -35,40 +46,33 @@ const startServer = (manager) => {
     res.render('dashboard', { bots, files, settings, path, firstBot });
   });
 
-  app.post('/bots/add', async (req, res) => {
-    const { username, password, proxy, cookie } = req.body;
-    if (!username) return res.status(400).send('username obrigatório');
-    if (!password && !cookie) return res.status(400).send('senha ou cookie obrigatório');
-    try { await manager.addBot({ username, password, proxy, cookie }); return res.redirect('/dashboard'); }
-    catch (err) { return res.status(500).send(`Falha ao adicionar bot: ${err.message || err}`); }
-  });
+  app.post('/bots/add',
+    body('username').isLength({ min: 2 }),
+    (req, res) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) return res.status(400).send('Dados inválidos');
+      const { username, password, proxy, cookie } = req.body;
+      // só persiste user/pass (cookie/proxy não guardamos aqui)
+      const accounts = loadAccounts();
+      const existing = accounts.find((a) => a.username === username);
+      if (!existing) accounts.push({ username, password: password || '', email: '' });
+      saveAccounts(accounts);
+      logger.info({ username, proxy: !!proxy, cookie: !!cookie }, 'Bot adicionado (dados persistidos)');
+      return res.redirect('/dashboard');
+    });
 
   app.post('/bots/:username/massdm', uploadLists.single('listfile'), async (req, res) => {
-    const bot = manager.getBot(req.params.username);
-    if (!bot?.ready) return res.status(400).send('Bot não pronto');
+    if (process.env.KILL_SWITCH === 'true') return res.status(503).send('kill switch');
+    const { username } = req.params;
+    const listPath = req.body.listPath || settings.targetsFile;
     const template = req.body.template || settings.baseMessage;
     const link = req.body.link || settings.defaultLink;
     const mediaPath = req.file ? req.file.path : null;
-    const listPath = req.body.listPath || settings.targetsFile;
-    await bot.massSender.loadRecipients(listPath);
-    bot.massSender.sendAll({ template, link, mediaPath });
+    await dmQueue.add('dm', { username, listPath, template, link, mediaPath }, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 60_000 },
+    });
     return res.redirect('/dashboard');
-  });
-
-  app.post('/bots/:username/pause', (req, res) => { const b = manager.getBot(req.params.username); b?.massSender.pause(); res.redirect('/dashboard'); });
-  app.post('/bots/:username/resume', (req, res) => { const b = manager.getBot(req.params.username); b?.massSender.resume(); res.redirect('/dashboard'); });
-  app.post('/bots/:username/stop', (req, res) => { const b = manager.getBot(req.params.username); b?.massSender.stop(); res.redirect('/dashboard'); });
-
-  app.post('/download/story', async (req, res) => {
-    const bot = manager.bots[0]; if (!bot?.ready) return res.status(400).send('Nenhum bot pronto');
-    try { const f = await downloader.downloadStory(bot.ig, req.body.mediaId); return res.download(f); }
-    catch (err) { return res.status(500).send(err.message); }
-  });
-
-  app.post('/download/post', async (req, res) => {
-    const bot = manager.bots[0]; if (!bot?.ready) return res.status(400).send('Nenhum bot pronto');
-    try { const f = await downloader.downloadPost(bot.ig, req.body.mediaId); return res.download(f); }
-    catch (err) { return res.status(500).send(err.message); }
   });
 
   app.post('/sessions/upload', uploadSessions.single('sessionfile'), async (req, res) => {
@@ -79,38 +83,21 @@ const startServer = (manager) => {
     return res.redirect('/dashboard');
   });
 
-  app.post('/accounts/create', async (req, res) => {
+  app.post('/accounts/create', body('qty').optional().isInt({ min: 1, max: 5 }), async (req, res) => {
+    if (process.env.KILL_SWITCH === 'true') return res.status(503).send('kill switch');
     if (!settings.createV2) return res.status(400).send('CREATE_V2 desabilitado');
     const qty = Number(req.body.qty || 1);
-    try {
-      const result = await createAccountsBatch(qty, manager.proxyManager.goodProxies);
-      if (result?.success === false) return res.status(400).send(result.error || 'Falha na criação');
-      return res.redirect('/dashboard');
-    } catch (err) {
-      return res.status(500).send(`Falha ao criar: ${err.message || err}`);
-    }
-  });
-
-  app.post('/actions/:username/like', async (req, res) => {
-    const bot = manager.getBot(req.params.username); if (!bot?.ready) return res.status(400).send('Bot não pronto');
-    await bot.actions.massLike({ mediaListPath: req.body.listPath, limit: Number(req.body.limit) || 50 });
+    await signupQueue.add('signup', { qty, proxies: [] }, {
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 120_000 },
+    });
     return res.redirect('/dashboard');
   });
 
-  app.post('/actions/:username/comment', async (req, res) => {
-    const bot = manager.getBot(req.params.username); if (!bot?.ready) return res.status(400).send('Bot não pronto');
-    await bot.actions.massComment({ mediaListPath: req.body.listPath, limit: Number(req.body.limit) || 20, template: req.body.template || 'Nice!' });
-    return res.redirect('/dashboard');
-  });
+  // Ações diretas desabilitadas neste modo; todas via worker
+  app.post('/actions/:username/:action', (req, res) => res.status(501).send('Use o worker/filas'));
 
-  app.post('/actions/:username/report', async (req, res) => {
-    const bot = manager.getBot(req.params.username); if (!bot?.ready) return res.status(400).send('Bot não pronto');
-    const ids = (req.body.targets || '').split(/\r?\n/).filter(Boolean);
-    await bot.actions.massReport({ userIds: ids, reason: req.body.reason || 'spam', count: Number(req.body.count) || 5 });
-    return res.redirect('/dashboard');
-  });
-
-  app.listen(settings.port, () => console.log(`Dashboard http://localhost:${settings.port}`));
+  app.listen(settings.port, () => logger.info(`Dashboard http://localhost:${settings.port}`));
 };
 
 export default startServer;

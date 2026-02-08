@@ -7,7 +7,11 @@
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "pm2": "pm2 start ecosystem.config.js"
+    "pm2": "pm2 start ecosystem.config.js",
+    "worker:dm": "ROLE=dm-worker node src/index.js",
+    "worker:signup": "ROLE=signup-worker node src/index.js",
+    "test:login": "DRY_RUN=true node tests/smoke-login.js",
+    "test:dm": "DRY_RUN=true node tests/smoke-dm.js"
   },
   "dependencies": {
     "axios": "^1.6.7",
@@ -15,8 +19,11 @@
     "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
+    "express-validator": "^7.0.1",
     "ioredis": "^5.3.2",
     "instagram-private-api": "^1.46.1",
+    "bullmq": "^4.16.0",
+    "bottleneck": "^2.19.5",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.9",
     "pino": "^8.16.1",

@@ -1,37 +1,17 @@
-import fs from 'fs';
-import path from 'path';
-import {
-  IgApiClient,
-  IgCheckpointError,
-  IgLoginRequiredError,
-} from 'instagram-private-api';
+import { IgApiClient, IgCheckpointError, IgLoginRequiredError } from 'instagram-private-api';
 import settings from './settings.js';
 import { randomUserAgent } from './utils/uaPool.js';
 import { createLogger } from './utils/logger.js';
+import { saveSession, loadSession } from './state/sessionStore.js';
 
-const sessionsDir = settings.sessionsDir;
-
-const serializeSession = async (ig, username) => {
-  const state = await ig.state.serialize();
-  fs.writeFileSync(path.join(sessionsDir, `${username}.json`), JSON.stringify(state));
-};
-
-const loadSession = async (ig, username) => {
-  const file = path.join(sessionsDir, `${username}.json`);
-  if (!fs.existsSync(file)) return false;
-  await ig.state.deserialize(JSON.parse(fs.readFileSync(file)));
-  return true;
-};
+const loggerBase = createLogger('auth');
 
 const buildClient = (username, proxy) => {
   const ig = new IgApiClient();
   ig.state.generateDevice(username);
   ig.state.proxyUrl = proxy || undefined;
   const ua = randomUserAgent();
-  // alguns builds não expõem defaults imediatamente; protege com checagem
-  if (ig.request?.defaults?.headers) {
-    ig.request.defaults.headers['User-Agent'] = ua;
-  }
+  if (ig.request?.defaults?.headers) ig.request.defaults.headers['User-Agent'] = ua;
   ig.state.userAgent = ua;
   return ig;
 };
@@ -39,7 +19,7 @@ const buildClient = (username, proxy) => {
 const handleChallenge = async (ig, username, logger) => {
   try {
     await ig.challenge.auto(true);
-    await serializeSession(ig, username);
+    await saveSession(username, await ig.state.serialize());
     logger.info({ username }, 'Challenge resolvido automaticamente');
   } catch (err) {
     logger.error({ err }, 'Challenge requer intervenção manual');
@@ -47,51 +27,37 @@ const handleChallenge = async (ig, username, logger) => {
   }
 };
 
-export const loginWithCookie = async ({ username, cookie, proxy }, logger = createLogger(username)) => {
+export const loginWithCookie = async ({ username, cookie, proxy }, logger = loggerBase) => {
   const ig = buildClient(username, proxy);
-  try {
-    const parts = (cookie || '').split(';').map((c) => c.trim()).filter(Boolean);
-    for (const p of parts) await ig.state.cookieJar.setCookie(p, 'https://i.instagram.com/');
-    await ig.account.currentUser(); // valida cookie
-    await serializeSession(ig, username);
-    logger.info({ username }, 'Login via cookie (explicit)');
-    return ig;
-  } catch (err) {
-    logger.error({ err }, 'Falha loginWithCookie');
-    throw err;
-  }
+  const parts = (cookie || '').split(';').map((c) => c.trim()).filter(Boolean);
+  for (const p of parts) await ig.state.cookieJar.setCookie(p, 'https://i.instagram.com/');
+  await ig.account.currentUser();
+  await saveSession(username, await ig.state.serialize());
+  logger.info({ username }, 'Login via cookie');
+  return ig;
 };
 
-export const login = async (
-  {
-    username, password, proxy, cookie,
-  },
-  logger = createLogger(username),
-) => {
+export const login = async ({
+  username, password, proxy, cookie,
+}, logger = loggerBase) => {
   const ig = buildClient(username, proxy);
+  // 1) tenta sessão persistida (Redis/FS)
+  const persisted = await loadSession(username);
+  if (persisted) {
+    await ig.state.deserialize(persisted);
+    await ig.account.currentUser();
+    logger.info({ username }, 'Sessão restaurada');
+    return ig;
+  }
+  // 2) cookie explícito
+  if (cookie) return loginWithCookie({ username, cookie, proxy }, logger);
+
+  // 3) senha
   try {
-    // 1) Usa sessão salva se existir
-    if (await loadSession(ig, username)) {
-      await ig.account.currentUser();
-      logger.info({ username }, 'Sessão restaurada');
-      return ig;
-    }
-
-    // 2) Tenta cookie se fornecido
-    if (cookie) {
-      const parts = cookie.split(';').map((c) => c.trim()).filter(Boolean);
-      for (const p of parts) await ig.state.cookieJar.setCookie(p, 'https://i.instagram.com/');
-      await ig.account.currentUser(); // valida cookie
-      await serializeSession(ig, username);
-      logger.info({ username }, 'Login via cookie');
-      return ig;
-    }
-
-    // 3) Senha
     await ig.simulate.preLoginFlow();
     await ig.account.login(username, password);
     await ig.simulate.postLoginFlow();
-    await serializeSession(ig, username);
+    await saveSession(username, await ig.state.serialize());
     logger.info({ username }, 'Login via senha');
     return ig;
   } catch (err) {
@@ -102,7 +68,7 @@ export const login = async (
     if (err instanceof IgLoginRequiredError || String(err.message).includes('login_required')) {
       logger.warn({ username }, 'Sessão inválida, tentando relogar');
       await ig.account.login(username, password);
-      await serializeSession(ig, username);
+      await saveSession(username, await ig.state.serialize());
       return ig;
     }
     if (String(err.message).includes('429')) {
@@ -114,11 +80,11 @@ export const login = async (
   }
 };
 
-export const refreshCookies = (ig, username, logger = createLogger(username)) => {
+export const refreshCookies = (ig, username, logger = loggerBase) => {
   setInterval(async () => {
     try {
       await ig.account.currentUser();
-      await serializeSession(ig, username);
+      await saveSession(username, await ig.state.serialize());
       logger.debug({ username }, 'Sessão renovada');
     } catch (err) {
       logger.warn({ err }, 'Falha ao renovar sessão');
@@ -136,4 +102,4 @@ export const detectActionBlock = (error) => {
     || msg.includes('challenge_required');
 };
 
-export default { login, refreshCookies, detectActionBlock };
+export default { login, loginWithCookie, refreshCookies, detectActionBlock };
