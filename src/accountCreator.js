@@ -39,6 +39,12 @@ const waitEmailCode = async (client, address) => {
 };
 
 export const createAccountsBatch = async (qty, proxies) => {
+  if (!settings.tempMailUrl || !settings.tempMailToken) {
+    return { success: false, error: 'TEMPMAIL_API_URL/TOKEN não definidos' };
+  }
+  if (!settings.captchaKey) {
+    return { success: false, error: 'CAPTCHA_API_KEY não definida (2Captcha)' };
+  }
   const created = [];
   for (let i = 0; i < qty; i += 1) {
     const proxy = proxies[i % (proxies.length || 1)];
@@ -49,7 +55,7 @@ export const createAccountsBatch = async (qty, proxies) => {
     const current = loadAccounts();
     saveAccounts([...current, ...created]);
   }
-  return created;
+  return { success: true, created };
 };
 
 export const createSingle = async (proxy) => {

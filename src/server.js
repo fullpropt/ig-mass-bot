@@ -82,8 +82,13 @@ const startServer = (manager) => {
   app.post('/accounts/create', async (req, res) => {
     if (!settings.createV2) return res.status(400).send('CREATE_V2 desabilitado');
     const qty = Number(req.body.qty || 1);
-    try { await createAccountsBatch(qty, manager.proxyManager.goodProxies); return res.redirect('/dashboard'); }
-    catch (err) { return res.status(500).send(`Falha ao criar: ${err.message || err}`); }
+    try {
+      const result = await createAccountsBatch(qty, manager.proxyManager.goodProxies);
+      if (result?.success === false) return res.status(400).send(result.error || 'Falha na criação');
+      return res.redirect('/dashboard');
+    } catch (err) {
+      return res.status(500).send(`Falha ao criar: ${err.message || err}`);
+    }
   });
 
   app.post('/actions/:username/like', async (req, res) => {
