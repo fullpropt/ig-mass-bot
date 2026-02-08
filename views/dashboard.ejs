@@ -4,52 +4,81 @@
   <meta charset="UTF-8" />
   <title>IG-MASS-BOT PRO</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  <style>
+    body { background: #0f1115; color: #e5e7eb; }
+    .box { background: #161922; border: 1px solid #1f2430; }
+    .navbar { background: #11131a; }
+    .tag.is-live { background: #2dd4bf; color: #0f1115; }
+    .tag.is-off { background: #f97316; }
+  </style>
 </head>
 <body class="section">
-<div class="container">
-  <h1 class="title">IG-MASS-BOT PRO</h1>
+<div class="container is-fluid">
+  <h1 class="title has-text-white">IG-MASS-BOT PRO</h1>
+  <p class="subtitle has-text-grey-light">Dashboard unificado: contas, DMs, likes, comments, reports, criação automática.</p>
 
-  <div class="box">
-    <h2 class="title is-5">Bots ativos</h2>
-    <table class="table is-fullwidth is-striped">
-      <thead><tr><th>User</th><th>Status</th><th>Fila</th><th>Enviados</th><th>Falhas</th><th>Proxy</th></tr></thead>
-      <tbody>
-      <% bots.forEach(b => { %>
-        <tr>
-          <td><%= b.username %></td>
-          <td><%= b.status %></td>
-          <td><%= b.queued %></td>
-          <td><%= b.stats.sent || 0 %></td>
-          <td><%= b.stats.failed || 0 %></td>
-          <td style="max-width:160px;word-break:break-all;"><%= b.proxy || 'none' %></td>
-        </tr>
-      <% }) %>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="columns">
-    <div class="column">
+  <div class="columns is-multiline">
+    <div class="column is-12">
       <div class="box">
-        <h3 class="title is-5">Rodar massdm</h3>
+        <div class="level">
+          <div class="level-left">
+            <div>
+              <p class="heading">Bots ativos</p>
+              <p class="title is-5 has-text-white"><%= bots.length %> contas</p>
+            </div>
+          </div>
+          <div class="level-right">
+            <span class="tag is-live">ONLINE</span>
+          </div>
+        </div>
+        <table class="table is-fullwidth is-striped is-hoverable">
+          <thead>
+            <tr>
+              <th>User</th><th>Status</th><th>Fila</th><th>Enviados</th><th>Falhas</th><th>Proxy</th>
+            </tr>
+          </thead>
+          <tbody>
+          <% if (!bots.length) { %>
+            <tr><td colspan="6">Nenhum bot. Adicione ao lado.</td></tr>
+          <% } %>
+          <% bots.forEach(b => { %>
+            <tr>
+              <td><%= b.username %></td>
+              <td><span class="tag <%= b.status==='running'?'is-live':'is-off' %>"><%= b.status %></span></td>
+              <td><%= b.queued %></td>
+              <td><%= b.stats.sent || 0 %></td>
+              <td><%= b.stats.failed || 0 %></td>
+              <td style="max-width:180px;word-break:break-all;"><%= b.proxy || 'none' %></td>
+            </tr>
+          <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="column is-6">
+      <div class="box">
+        <h3 class="title is-5 has-text-white">Rodar massdm</h3>
         <form action="/bots/<%= firstBot || 'none' %>/massdm" method="post" enctype="multipart/form-data">
           <div class="field">
-            <label class="label">Bot</label>
+            <label class="label has-text-white">Bot</label>
             <div class="select is-fullwidth">
               <select name="username" onchange="this.form.action='/bots/'+this.value+'/massdm'">
-                <% if (!bots.length) { %>
-                  <option value="">Nenhum bot — adicione ao lado</option>
-                <% } %>
+                <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
                 <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
               </select>
             </div>
           </div>
           <div class="field">
-            <label class="label">Template</label>
+            <label class="label has-text-white">Template</label>
             <textarea class="textarea" name="template" rows="3"><%= settings.baseMessage %></textarea>
           </div>
-          <div class="field"><label class="label">Link</label><input class="input" name="link" value="<%= settings.defaultLink %>"></div>
-          <div class="field"><label class="label">Lista</label>
+          <div class="field">
+            <label class="label has-text-white">Link</label>
+            <input class="input" name="link" value="<%= settings.defaultLink %>">
+          </div>
+          <div class="field">
+            <label class="label has-text-white">Lista</label>
             <div class="select is-fullwidth">
               <select name="listPath">
                 <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
@@ -58,100 +87,123 @@
             <p class="help">ou upload</p>
             <input type="file" name="listfile">
           </div>
-          <div class="field"><label class="label">Mídia (opcional)</label><input type="file" name="mediafile"></div>
-          <div class="field"><button class="button is-primary" <% if(!bots.length){ %>disabled<% } %>>Iniciar</button></div>
+          <div class="field">
+            <label class="label has-text-white">Mídia (opcional)</label>
+            <input type="file" name="mediafile">
+          </div>
+          <button class="button is-primary" <%= !bots.length ? 'disabled' : '' %>>Iniciar</button>
         </form>
       </div>
 
       <div class="box">
-        <h3 class="title is-5">Mass Like</h3>
+        <h3 class="title is-6 has-text-white">Mass Like</h3>
         <form action="/actions/<%= firstBot || 'none' %>/like" method="post">
           <div class="field">
-            <label class="label">Bot</label>
-            <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/like'">
-              <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
-              <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
-            </select>
+            <label class="label has-text-white">Bot</label>
+            <div class="select is-fullwidth">
+              <select name="username" onchange="this.form.action='/actions/'+this.value+'/like'">
+                <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
+                <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+              </select>
+            </div>
           </div>
           <div class="field">
-            <label class="label">Lista de media IDs</label>
-            <select class="select" name="listPath">
-              <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
-            </select>
+            <label class="label has-text-white">Lista de media IDs</label>
+            <div class="select is-fullwidth">
+              <select name="listPath">
+                <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
+              </select>
+            </div>
           </div>
-          <div class="field"><label class="label">Limite</label><input class="input" name="limit" value="50"></div>
-          <button class="button is-primary" <% if(!bots.length){ %>disabled<% } %>>Mass Like</button>
+          <div class="field">
+            <label class="label has-text-white">Limite</label>
+            <input class="input" name="limit" value="50">
+          </div>
+          <button class="button is-primary" <%= !bots.length ? 'disabled' : '' %>>Mass Like</button>
         </form>
       </div>
 
       <div class="box">
-        <h3 class="title is-5">Mass Comment</h3>
+        <h3 class="title is-6 has-text-white">Mass Comment</h3>
         <form action="/actions/<%= firstBot || 'none' %>/comment" method="post">
           <div class="field">
-            <label class="label">Bot</label>
-            <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/comment'">
-              <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
-              <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
-            </select>
+            <label class="label has-text-white">Bot</label>
+            <div class="select is-fullwidth">
+              <select name="username" onchange="this.form.action='/actions/'+this.value+'/comment'">
+                <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
+                <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+              </select>
+            </div>
           </div>
           <div class="field">
-            <label class="label">Lista de media IDs</label>
-            <select class="select" name="listPath">
-              <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
-            </select>
+            <label class="label has-text-white">Lista de media IDs</label>
+            <div class="select is-fullwidth">
+              <select name="listPath">
+                <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
+              </select>
+            </div>
           </div>
-          <div class="field"><label class="label">Template</label><textarea class="textarea" name="template" rows="2">Nice!</textarea></div>
-          <div class="field"><label class="label">Limite</label><input class="input" name="limit" value="20"></div>
-          <button class="button is-link" <% if(!bots.length){ %>disabled<% } %>>Mass Comment</button>
+          <div class="field">
+            <label class="label has-text-white">Template</label>
+            <textarea class="textarea" name="template" rows="2">Nice!</textarea>
+          </div>
+          <div class="field">
+            <label class="label has-text-white">Limite</label>
+            <input class="input" name="limit" value="20">
+          </div>
+          <button class="button is-link" <%= !bots.length ? 'disabled' : '' %>>Mass Comment</button>
         </form>
       </div>
 
       <div class="box">
-        <h3 class="title is-5">Mass Report</h3>
+        <h3 class="title is-6 has-text-white">Mass Report</h3>
         <form action="/actions/<%= firstBot || 'none' %>/report" method="post">
           <div class="field">
-            <label class="label">Bot</label>
-            <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/report'">
-              <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
-              <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
-            </select>
+            <label class="label has-text-white">Bot</label>
+            <div class="select is-fullwidth">
+              <select name="username" onchange="this.form.action='/actions/'+this.value+'/report'">
+                <% if (!bots.length) { %><option value="">Nenhum bot</option><% } %>
+                <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+              </select>
+            </div>
           </div>
-          <div class="field"><label class="label">Targets (user IDs, uma por linha)</label>
+          <div class="field">
+            <label class="label has-text-white">Targets (user IDs, uma por linha)</label>
             <textarea class="textarea" name="targets" rows="4"></textarea>
           </div>
-          <div class="field"><label class="label">Count</label><input class="input" name="count" value="5"></div>
-          <div class="field"><label class="label">Reason</label><input class="input" name="reason" value="spam"></div>
-          <button class="button is-danger" <% if(!bots.length){ %>disabled<% } %>>Mass Report</button>
+          <div class="field"><label class="label has-text-white">Count</label><input class="input" name="count" value="5"></div>
+          <div class="field"><label class="label has-text-white">Reason</label><input class="input" name="reason" value="spam"></div>
+          <button class="button is-danger" <%= !bots.length ? 'disabled' : '' %>>Mass Report</button>
         </form>
       </div>
     </div>
 
-    <div class="column">
+    <div class="column is-6">
       <div class="box">
-        <h3 class="title is-5">Adicionar bot (hot add)</h3>
+        <h3 class="title is-5 has-text-white">Adicionar bot (hot add)</h3>
         <form action="/bots/add" method="post">
-          <label class="label">Username</label><input class="input" name="username" required>
-          <label class="label">Senha</label><input class="input" type="password" name="password" placeholder="opcional se usar cookie">
-          <label class="label">Proxy</label><input class="input" name="proxy" placeholder="http://user:pass@ip:port">
-          <label class="label">Cookie</label><textarea class="textarea" name="cookie" rows="3"></textarea>
+          <label class="label has-text-white">Username</label><input class="input" name="username" required>
+          <label class="label has-text-white">Senha</label><input class="input" type="password" name="password" placeholder="opcional se usar cookie">
+          <label class="label has-text-white">Proxy</label><input class="input" name="proxy" placeholder="http://user:pass@ip:port">
+          <label class="label has-text-white">Cookie</label><textarea class="textarea" name="cookie" rows="3"></textarea>
           <button class="button is-link">Adicionar</button>
         </form>
       </div>
 
       <div class="box">
-        <h3 class="title is-5">Importar sessão JSON</h3>
+        <h3 class="title is-6 has-text-white">Importar sessão JSON</h3>
         <form action="/sessions/upload" method="post" enctype="multipart/form-data">
-          <label class="label">Username</label><input class="input" name="username" required>
-          <label class="label">Arquivo .json</label><input type="file" name="sessionfile" required>
+          <label class="label has-text-white">Username</label><input class="input" name="username" required>
+          <label class="label has-text-white">Arquivo .json</label><input type="file" name="sessionfile" required>
           <button class="button is-primary">Enviar</button>
         </form>
       </div>
 
       <div class="box">
-        <h3 class="title is-5">Criar contas automáticas</h3>
+        <h3 class="title is-6 has-text-white">Criar contas automáticas</h3>
         <form action="/accounts/create" method="post">
-          <p class="help">Requer CREATE_V2=true; usa Puppeteer + 2Captcha + temp-mail; 1 proxy/conta.</p>
-          <label class="label">Quantidade</label><input class="input" name="qty" value="1">
+          <p class="help">Requer CREATE_V2=true; usa Puppeteer + 2Captcha + temp-mail.</p>
+          <label class="label has-text-white">Quantidade</label><input class="input" name="qty" value="1">
           <button class="button is-warning">Criar</button>
         </form>
       </div>
