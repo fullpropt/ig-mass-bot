@@ -1,38 +1,37 @@
 {
-  "name": "ig-mass-bot",
-  "version": "1.0.0",
-  "description": "Multi-account ethical Instagram mass DM bot with dashboard, anti-ban, and proxy management inspired by KHAN-MD",
+  "name": "ig-mass-bot-pro",
+  "version": "2.0.0",
+  "description": "Instagram multi-bot com criação automática de contas, mass DM/like/comment/report, dashboard e anti-ban",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
-    "pm2": "pm2 start ecosystem.config.js --env production",
-    "lint": "eslint ."
+    "pm2": "pm2 start ecosystem.config.js"
   },
-  "keywords": ["instagram", "dm", "mass", "proxy", "pm2", "railway"],
-  "author": "",
-  "license": "Apache-2.0",
   "dependencies": {
     "axios": "^1.6.7",
     "csv-parser": "^3.0.0",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
     "express": "^4.18.2",
+    "ioredis": "^5.3.2",
     "instagram-private-api": "^1.46.1",
     "multer": "^1.4.5-lts.1",
+    "nodemailer": "^6.9.9",
     "pino": "^8.16.1",
     "pm2": "^5.3.0",
     "proxy-agent": "^6.3.0",
-    "user-agents": "^1.1.204",
-    "uuid": "^9.0.1",
     "puppeteer": "^21.11.0",
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.1",
-    "2captcha": "^3.0.2"
+    "2captcha": "^3.0.2",
+    "user-agents": "^1.1.204",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
-    "eslint": "^8.56.0",
-    "nodemon": "^3.0.2"
-  }
+    "nodemon": "^3.0.2",
+    "eslint": "^8.56.0"
+  },
+  "license": "Apache-2.0"
 }

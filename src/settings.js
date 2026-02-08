@@ -9,52 +9,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
-const ensureDir = (dir) => { if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true }); };
-ensureDir(path.join(rootDir, 'sessions'));
-ensureDir(path.join(rootDir, 'logs'));
-ensureDir(path.join(rootDir, 'lists'));
-
-const readLines = (filePath) => {
-  try {
-    const abs = path.isAbsolute(filePath) ? filePath : path.join(rootDir, filePath);
-    if (!fs.existsSync(abs)) return [];
-    return fs.readFileSync(abs, 'utf-8')
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .filter((l) => l && !l.startsWith('#'));
-  } catch (err) {
-    return [];
-  }
-};
-
-const parseAccounts = (lines) => lines.map((line) => {
-  const [username, password, email] = line.split(':');
-  return { username, password, email };
-});
-
-const envAccounts = (process.env.ACCOUNTS || '')
-  .split(',')
-  .map((p) => p.trim())
-  .filter(Boolean)
-  .map((pair) => {
-    const [username, password] = pair.split(':');
-    return { username, password };
-  });
-
-const accountsFile = process.env.ACCOUNTS_FILE || './accounts.txt';
-const accounts = parseAccounts(readLines(accountsFile));
-const proxiesFile = process.env.PROXIES_FILE || './proxies.txt';
-const proxies = readLines(proxiesFile);
-const targetsFile = process.env.TARGETS_FILE || './targets.txt';
+const ensure = (p) => { if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true }); };
+ensure(path.join(rootDir, 'sessions'));
+ensure(path.join(rootDir, 'logs'));
+ensure(path.join(rootDir, 'lists'));
+ensure(path.join(rootDir, 'downloads'));
 
 const settings = {
   rootDir,
   sessionsDir: path.join(rootDir, 'sessions'),
   logsDir: path.join(rootDir, 'logs'),
   listsDir: path.join(rootDir, 'lists'),
-  accounts: accounts.length ? accounts : envAccounts,
-  proxies,
-  targetsFile,
+  targetsFile: process.env.TARGETS_FILE || './targets.txt',
+  mediaListFile: process.env.MEDIA_LIST_FILE || './medias.txt',
+  accountsFile: process.env.ACCOUNTS_FILE || './accounts.enc',
+  proxiesFile: process.env.PROXIES_FILE || './proxies.txt',
   maxDmPerDay: Number(process.env.MAX_DM_PER_DAY || 60),
   delayMin: Number(process.env.DELAY_MIN || 35),
   delayMax: Number(process.env.DELAY_MAX || 95),
@@ -66,7 +35,22 @@ const settings = {
   baseMessage: process.env.BASE_MESSAGE || 'Olá {nome}! Temos algo especial pra você: {link}',
   defaultLink: process.env.DEFAULT_LINK || '',
   logLevel: process.env.LOG_LEVEL || 'info',
-  maxCreationsPerDay: Number(process.env.MAX_CREATIONS_PER_DAY || 5),
+  createV2: (process.env.CREATE_V2 || 'true').toLowerCase() === 'true',
+  maxCreationsPerHour: Number(process.env.MAX_CREATIONS_PER_HOUR || 2),
+  captchaKey: process.env.CAPTCHA_API_KEY || '',
+  tempMailUrl: process.env.TEMPMAIL_API_URL || '',
+  tempMailToken: process.env.TEMPMAIL_API_TOKEN || '',
+  passwordDefault: process.env.PASSWORD_DEFAULT || 'SenhaForte!123',
+  accountsSecret: process.env.ACCOUNTS_SECRET || 'chave-secreta-32-bytes-exata-1234567890abcd',
+  redisUrl: process.env.REDIS_URL || '',
+  dryRun: (process.env.DRY_RUN || 'false').toLowerCase() === 'true',
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT || 587),
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    to: process.env.ALERT_EMAIL || ''
+  }
 };
 
 export default settings;

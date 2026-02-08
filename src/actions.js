@@ -6,7 +6,6 @@ import { randomUserAgent } from './utils/uaPool.js';
 import { createLogger } from './utils/logger.js';
 
 const wait = (ms) => new Promise((res) => setTimeout(res, ms));
-
 const gaussian = (min, max) => {
   let u = 0; let v = 0;
   while (u === 0) u = Math.random();
@@ -17,24 +16,18 @@ const gaussian = (min, max) => {
 };
 
 const loadList = async (filePath) => {
-  const ext = path.extname(filePath || '').toLowerCase();
-  const targetPath = path.isAbsolute(filePath) ? filePath : path.join(settings.rootDir, filePath);
-  if (!fs.existsSync(targetPath)) return [];
-  if (ext === '.csv') {
+  const p = path.isAbsolute(filePath) ? filePath : path.join(settings.rootDir, filePath);
+  if (!fs.existsSync(p)) return [];
+  if (p.endsWith('.csv')) {
     return new Promise((resolve, reject) => {
       const arr = [];
-      fs.createReadStream(targetPath)
-        .pipe(csv())
-        .on('data', (row) => {
-          const val = Object.values(row)[0];
-          if (val) arr.push(val.trim());
-        })
-        .on('end', () => resolve(arr))
-        .on('error', reject);
+      fs.createReadStream(p).pipe(csv()).on('data', (row) => {
+        const val = Object.values(row)[0];
+        if (val) arr.push(val.trim());
+      }).on('end', () => resolve(arr)).on('error', reject);
     });
   }
-  const raw = fs.readFileSync(targetPath, 'utf-8');
-  return raw.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  return fs.readFileSync(p, 'utf-8').split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
 };
 
 export class ActionsRunner {
@@ -44,36 +37,45 @@ export class ActionsRunner {
     this.logger = logger;
   }
 
-  async massLike({ mediaListPath, limit = 50 }) {
-    const ids = await loadList(mediaListPath || settings.targetsFile);
+  async massLike({ mediaListPath = settings.mediaListFile, limit = 50 }) {
+    const ids = await loadList(mediaListPath);
     const slice = ids.slice(0, limit);
     for (const mediaId of slice) {
+      if (settings.dryRun) { this.logger.info({ mediaId }, '[dry-run] like'); continue; }
       try {
         this.ig.request.defaults.headers['User-Agent'] = randomUserAgent();
         await this.ig.media.like({ mediaId });
         this.logger.info({ mediaId }, 'Like enviado');
-      } catch (err) {
-        this.logger.error({ mediaId, err }, 'Falha no like');
-      }
+      } catch (err) { this.logger.error({ mediaId, err }, 'Falha like'); }
       await wait(gaussian(3000, 10000));
     }
-    return { processed: slice.length };
   }
 
-  async massComment({ mediaListPath, template, limit = 20 }) {
-    const ids = await loadList(mediaListPath || settings.targetsFile);
+  async massComment({ mediaListPath = settings.mediaListFile, template, limit = 20 }) {
+    const ids = await loadList(mediaListPath);
     const slice = ids.slice(0, limit);
     for (const mediaId of slice) {
+      if (settings.dryRun) { this.logger.info({ mediaId }, '[dry-run] comment'); continue; }
       try {
+        const msg = template;
         this.ig.request.defaults.headers['User-Agent'] = randomUserAgent();
-        await this.ig.media.comment({ mediaId, text: template });
+        await this.ig.media.comment({ mediaId, text: msg });
         this.logger.info({ mediaId }, 'Comentário enviado');
-      } catch (err) {
-        this.logger.error({ mediaId, err }, 'Falha no comentário');
-      }
+      } catch (err) { this.logger.error({ mediaId, err }, 'Falha comment'); }
       await wait(gaussian(5000, 15000));
     }
-    return { processed: slice.length };
+  }
+
+  async massReport({ userIds, reason = 'spam', count = 5 }) {
+    const slice = userIds.slice(0, count);
+    for (const uid of slice) {
+      if (settings.dryRun) { this.logger.info({ uid }, '[dry-run] report'); continue; }
+      try {
+        await this.ig.user.report({ userId: uid, reason });
+        this.logger.info({ uid }, 'Report enviado');
+      } catch (err) { this.logger.error({ uid, err }, 'Falha report'); }
+      await wait(gaussian(10000, 30000));
+    }
   }
 }
 

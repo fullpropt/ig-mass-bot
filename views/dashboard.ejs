@@ -2,246 +2,155 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8" />
-  <title>IG-MASS-BOT</title>
+  <title>IG-MASS-BOT PRO</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
 </head>
 <body class="section">
-  <div class="container">
-    <h1 class="title">IG-MASS-BOT</h1>
-    <p class="subtitle">Ethical Instagram DM automation • Porta <%= settings.port %></p>
-    <article class="message is-danger">
-      <div class="message-header"><p>Uso ético obrigatório</p></div>
-      <div class="message-body">
-        Envie somente para contatos que deram consentimento explícito (opt-in). Violação dos termos do Instagram pode resultar em ban permanente.
-      </div>
-    </article>
+<div class="container">
+  <h1 class="title">IG-MASS-BOT PRO</h1>
 
-    <div class="box">
-      <h2 class="title is-5">Bots ativos</h2>
-      <table class="table is-fullwidth is-striped">
-        <thead><tr><th>Username</th><th>Status</th><th>Fila</th><th>Enviados</th><th>Falharam</th><th>Proxy</th><th>Ações</th></tr></thead>
-        <tbody>
-          <% bots.forEach(bot => { %>
-            <tr>
-              <td><%= bot.username %></td>
-              <td><%= bot.status %></td>
-              <td><%= bot.queued %></td>
-              <td><%= bot.stats.sent || 0 %></td>
-              <td><%= bot.stats.failed || 0 %></td>
-              <td style="max-width:160px; word-break: break-all;"><%= bot.proxy || 'none' %></td>
-              <td>
-                <form action="/bots/<%= bot.username %>/pause" method="post" style="display:inline">
-                  <button class="button is-small">Pause</button>
-                </form>
-                <form action="/bots/<%= bot.username %>/resume" method="post" style="display:inline">
-                  <button class="button is-small is-info">Resume</button>
-                </form>
-                <form action="/bots/<%= bot.username %>/stop" method="post" style="display:inline">
-                  <button class="button is-small is-danger">Stop</button>
-                </form>
-              </td>
-            </tr>
-          <% }) %>
-        </tbody>
-      </table>
+  <div class="box">
+    <h2 class="title is-5">Bots ativos</h2>
+    <table class="table is-fullwidth is-striped">
+      <thead><tr><th>User</th><th>Status</th><th>Fila</th><th>Enviados</th><th>Falhas</th><th>Proxy</th></tr></thead>
+      <tbody>
+      <% bots.forEach(b => { %>
+        <tr>
+          <td><%= b.username %></td>
+          <td><%= b.status %></td>
+          <td><%= b.queued %></td>
+          <td><%= b.stats.sent || 0 %></td>
+          <td><%= b.stats.failed || 0 %></td>
+          <td style="max-width:160px;word-break:break-all;"><%= b.proxy || 'none' %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="columns">
+    <div class="column">
+      <div class="box">
+        <h3 class="title is-5">Rodar massdm</h3>
+        <form action="/bots/<%= bots[0]?.username %>/massdm" method="post" enctype="multipart/form-data">
+          <div class="field">
+            <label class="label">Bot</label>
+            <div class="select is-fullwidth">
+              <select name="username" onchange="this.form.action='/bots/'+this.value+'/massdm'">
+                <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Template</label>
+            <textarea class="textarea" name="template" rows="3"><%= settings.baseMessage %></textarea>
+          </div>
+          <div class="field"><label class="label">Link</label><input class="input" name="link" value="<%= settings.defaultLink %>"></div>
+          <div class="field"><label class="label">Lista</label>
+            <div class="select is-fullwidth">
+              <select name="listPath">
+                <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
+              </select>
+            </div>
+            <p class="help">ou upload</p>
+            <input type="file" name="listfile">
+          </div>
+          <div class="field"><label class="label">Mídia (opcional)</label><input type="file" name="mediafile"></div>
+          <div class="field"><button class="button is-primary">Iniciar</button></div>
+        </form>
+      </div>
+
+      <div class="box">
+        <h3 class="title is-5">Mass Like</h3>
+        <form action="/actions/<%= bots[0]?.username %>/like" method="post">
+          <div class="field">
+            <label class="label">Bot</label>
+            <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/like'">
+              <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Lista de media IDs</label>
+            <select class="select" name="listPath">
+              <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
+            </select>
+          </div>
+          <div class="field"><label class="label">Limite</label><input class="input" name="limit" value="50"></div>
+          <button class="button is-primary">Mass Like</button>
+        </form>
+      </div>
+
+      <div class="box">
+        <h3 class="title is-5">Mass Comment</h3>
+        <form action="/actions/<%= bots[0]?.username %>/comment" method="post">
+          <div class="field">
+            <label class="label">Bot</label>
+            <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/comment'">
+              <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label class="label">Lista de media IDs</label>
+            <select class="select" name="listPath">
+              <% files.forEach(f => { %><option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option><% }) %>
+            </select>
+          </div>
+          <div class="field"><label class="label">Template</label><textarea class="textarea" name="template" rows="2">Nice!</textarea></div>
+          <div class="field"><label class="label">Limite</label><input class="input" name="limit" value="20"></div>
+          <button class="button is-link">Mass Comment</button>
+        </form>
+      </div>
+
+      <div class="box">
+        <h3 class="title is-5">Mass Report</h3>
+        <form action="/actions/<%= bots[0]?.username %>/report" method="post">
+          <div class="field">
+            <label class="label">Bot</label>
+            <select class="select" name="username" onchange="this.form.action='/actions/'+this.value+'/report'">
+              <% bots.forEach(b => { %><option value="<%= b.username %>"><%= b.username %></option><% }) %>
+            </select>
+          </div>
+          <div class="field"><label class="label">Targets (user IDs, uma por linha)</label>
+            <textarea class="textarea" name="targets" rows="4"></textarea>
+          </div>
+          <div class="field"><label class="label">Count</label><input class="input" name="count" value="5"></div>
+          <div class="field"><label class="label">Reason</label><input class="input" name="reason" value="spam"></div>
+          <button class="button is-danger">Mass Report</button>
+        </form>
+      </div>
     </div>
 
-    <div class="columns">
-      <div class="column">
-        <div class="box">
-          <h3 class="title is-5">Rodar .massdm</h3>
-          <form action="/bots/<%= bots[0]?.username %>/massdm" method="post" enctype="multipart/form-data">
-            <div class="field">
-              <label class="label">Bot</label>
-              <div class="control">
-                <div class="select is-fullwidth">
-                  <select name="username" onchange="this.form.action='/bots/'+this.value+'/massdm'">
-                    <% bots.forEach(bot => { %>
-                      <option value="<%= bot.username %>"><%= bot.username %></option>
-                    <% }) %>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Template</label>
-              <div class="control"><textarea name="template" class="textarea" rows="3"><%= settings.baseMessage %></textarea></div>
-              <p class="help">Suporta {nome}, {username}, {link} e spintax {"oi|olá"}</p>
-            </div>
-            <div class="field">
-              <label class="label">Link</label>
-              <div class="control"><input class="input" name="link" value="<%= settings.defaultLink %>"></div>
-            </div>
-            <div class="field">
-              <label class="label">Lista</label>
-              <div class="control">
-                <div class="select is-fullwidth">
-                  <select name="listPath">
-                    <% files.forEach(f => { %>
-                      <option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option>
-                    <% }) %>
-                  </select>
-                </div>
-              </div>
-              <p class="help">ou envie CSV/TXT</p>
-              <div class="control"><input type="file" name="listfile" class="file-input"></div>
-            </div>
-            <div class="field">
-              <button class="button is-primary">Iniciar</button>
-            </div>
-          </form>
-        </div>
+    <div class="column">
+      <div class="box">
+        <h3 class="title is-5">Adicionar bot (hot add)</h3>
+        <form action="/bots/add" method="post">
+          <label class="label">Username</label><input class="input" name="username" required>
+          <label class="label">Senha</label><input class="input" type="password" name="password" placeholder="opcional se usar cookie">
+          <label class="label">Proxy</label><input class="input" name="proxy" placeholder="http://user:pass@ip:port">
+          <label class="label">Cookie</label><textarea class="textarea" name="cookie" rows="3"></textarea>
+          <button class="button is-link">Adicionar</button>
+        </form>
       </div>
 
-      <div class="column">
-        <div class="box">
-          <h3 class="title is-5">Adicionar bot (hot add)</h3>
-          <form action="/bots/add" method="post">
-            <div class="field">
-              <label class="label">Username</label>
-              <div class="control"><input class="input" name="username" required></div>
-            </div>
-            <div class="field">
-              <label class="label">Senha</label>
-              <div class="control"><input class="input" type="password" name="password" placeholder="Opcional se usar cookie"></div>
-            </div>
-            <div class="field">
-              <label class="label">Proxy (opcional)</label>
-              <div class="control"><input class="input" name="proxy" placeholder="http://user:pass@ip:port"></div>
-            </div>
-            <div class="field">
-              <label class="label">Cookie (opcional)</label>
-              <div class="control">
-                <textarea class="textarea" name="cookie" rows="3" placeholder="Cole o cookie completo (sessionid=...; csrftoken=...; ...)"></textarea>
-              </div>
-              <p class="help">Se preencher, a conta tentará logar via cookie e salvará sessão. Informe senha apenas se quiser fallback.</p>
-            </div>
-            <div class="field">
-              <button class="button is-link">Adicionar</button>
-            </div>
-          </form>
-        </div>
+      <div class="box">
+        <h3 class="title is-5">Importar sessão JSON</h3>
+        <form action="/sessions/upload" method="post" enctype="multipart/form-data">
+          <label class="label">Username</label><input class="input" name="username" required>
+          <label class="label">Arquivo .json</label><input type="file" name="sessionfile" required>
+          <button class="button is-primary">Enviar</button>
+        </form>
+      </div>
 
-        <div class="box">
-          <h3 class="title is-5">Importar sessão JSON</h3>
-          <form action="/sessions/upload" method="post" enctype="multipart/form-data">
-            <div class="field">
-              <label class="label">Username (igual ao arquivo)</label>
-              <div class="control"><input class="input" name="username" required></div>
-            </div>
-            <div class="field">
-              <label class="label">Arquivo de sessão (.json)</label>
-              <div class="control"><input type="file" name="sessionfile" accept=".json" required></div>
-            </div>
-            <div class="field">
-              <button class="button is-primary">Enviar sessão</button>
-            </div>
-            <p class="help">Sobrescreve sessions/&lt;username&gt;.json. Use apenas para contas com consentimento.</p>
-          </form>
-        </div>
-
-        <div class="box">
-          <h3 class="title is-5">Criar conta (Puppeteer)</h3>
-          <form action="/accounts/create" method="post">
-            <p class="help">Requer CREATE_V2=true e proxies residenciais. Captcha/email não automatizados neste esqueleto.</p>
-            <div class="field">
-              <label class="label">Email</label>
-              <div class="control"><input class="input" name="email" required></div>
-            </div>
-            <div class="field">
-              <label class="label">Username</label>
-              <div class="control"><input class="input" name="username" required></div>
-            </div>
-            <div class="field">
-              <label class="label">Senha</label>
-              <div class="control"><input class="input" type="password" name="password" required></div>
-            </div>
-            <div class="field">
-              <label class="label">Proxy (opcional)</label>
-              <div class="control"><input class="input" name="proxy" placeholder="http://user:pass@ip:port"></div>
-            </div>
-            <div class="field">
-              <button class="button is-warning">Criar conta</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="box">
-          <h3 class="title is-5">Mass Like</h3>
-          <form action="/actions/<%= bots[0]?.username %>/like" method="post">
-            <div class="field">
-              <label class="label">Bot</label>
-              <div class="select is-fullwidth">
-                <select name="username" onchange="this.form.action='/actions/'+this.value+'/like'">
-                  <% bots.forEach(bot => { %>
-                    <option value="<%= bot.username %>"><%= bot.username %></option>
-                  <% }) %>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Lista de media IDs</label>
-              <div class="control">
-                <div class="select is-fullwidth">
-                  <select name="listPath">
-                    <% files.forEach(f => { %>
-                      <option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option>
-                    <% }) %>
-                  </select>
-                </div>
-              </div>
-              <p class="help">Cada linha: mediaId (ex: 123456789_123456789)</p>
-            </div>
-            <div class="field">
-              <label class="label">Limite</label>
-              <div class="control"><input class="input" name="limit" type="number" value="50"></div>
-            </div>
-            <div class="field">
-              <button class="button is-primary">Rodar Mass Like</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="box">
-          <h3 class="title is-5">Mass Comment</h3>
-          <form action="/actions/<%= bots[0]?.username %>/comment" method="post">
-            <div class="field">
-              <label class="label">Bot</label>
-              <div class="select is-fullwidth">
-                <select name="username" onchange="this.form.action='/actions/'+this.value+'/comment'">
-                  <% bots.forEach(bot => { %>
-                    <option value="<%= bot.username %>"><%= bot.username %></option>
-                  <% }) %>
-                </select>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Lista de media IDs</label>
-              <div class="control">
-                <div class="select is-fullwidth">
-                  <select name="listPath">
-                    <% files.forEach(f => { %>
-                      <option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option>
-                    <% }) %>
-                  </select>
-                </div>
-              </div>
-            </div>
-            <div class="field">
-              <label class="label">Template do comentário</label>
-              <div class="control"><textarea class="textarea" name="template" rows="2" required>Nice post!</textarea></div>
-            </div>
-            <div class="field">
-              <label class="label">Limite</label>
-              <div class="control"><input class="input" name="limit" type="number" value="20"></div>
-            </div>
-            <div class="field">
-              <button class="button is-link">Rodar Mass Comment</button>
-            </div>
-          </form>
-        </div>
+      <div class="box">
+        <h3 class="title is-5">Criar contas automáticas</h3>
+        <form action="/accounts/create" method="post">
+          <p class="help">Requer CREATE_V2=true; usa Puppeteer + 2Captcha + temp-mail; 1 proxy/conta.</p>
+          <label class="label">Quantidade</label><input class="input" name="qty" value="1">
+          <button class="button is-warning">Criar</button>
+        </form>
       </div>
     </div>
   </div>
+</div>
 </body>
 </html>
