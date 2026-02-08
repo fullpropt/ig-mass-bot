@@ -23,8 +23,9 @@ export const buildClient = (username, proxy) => {
   const ig = new IgApiClient();
   ig.state.generateDevice(username);
   ig.state.proxyUrl = proxy || undefined;
-  ig.state.appUserAgent = randomUserAgent();
-  ig.state.userAgent = ig.state.appUserAgent;
+  const ua = randomUserAgent();
+  // instagram-private-api appUserAgent is read-only; set UA via request defaults
+  ig.request.defaults.headers['User-Agent'] = ua;
   return ig;
 };
 
