@@ -44,8 +44,13 @@ const startServer = (manager) => {
   app.post('/bots/add', async (req, res) => {
     const { username, password, proxy } = req.body;
     if (!username || !password) return res.status(400).send('username/password obrigatórios');
-    await manager.addBot({ username, password, proxy });
-    return res.redirect('/dashboard');
+    try {
+      await manager.addBot({ username, password, proxy });
+      return res.redirect('/dashboard');
+    } catch (err) {
+      // Retorna erro sem derrubar o servidor (evita 502)
+      return res.status(500).send(`Falha ao adicionar bot: ${err.message || err}`);
+    }
   });
 
   app.post('/bots/:username/massdm', upload.single('listfile'), async (req, res) => {
