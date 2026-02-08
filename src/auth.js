@@ -42,6 +42,21 @@ const handleChallenge = async (ig, username, logger) => {
   }
 };
 
+export const loginWithCookie = async ({ username, cookie, proxy }, logger = createLogger(username)) => {
+  const ig = buildClient(username, proxy);
+  try {
+    const parts = (cookie || '').split(';').map((c) => c.trim()).filter(Boolean);
+    for (const p of parts) await ig.state.cookieJar.setCookie(p, 'https://i.instagram.com/');
+    await ig.account.currentUser(); // valida cookie
+    await serializeSession(ig, username);
+    logger.info({ username }, 'Login via cookie (explicit)');
+    return ig;
+  } catch (err) {
+    logger.error({ err }, 'Falha loginWithCookie');
+    throw err;
+  }
+};
+
 export const login = async (
   {
     username, password, proxy, cookie,
