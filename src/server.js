@@ -5,6 +5,7 @@ import fs from 'fs';
 import settings from './settings.js';
 import downloader from './utils/downloader.js';
 import ActionsRunner from './actions.js';
+import { createWithPuppeteer } from './accountCreator.js';
 
 const uploadLists = multer({ dest: path.join(settings.rootDir, 'lists') });
 const uploadSessions = multer({ dest: settings.sessionsDir });
@@ -107,6 +108,19 @@ const startServer = (manager) => {
       return res.redirect('/dashboard');
     } catch (err) {
       return res.status(500).send(`Falha ao salvar sessão: ${err.message || err}`);
+    }
+  });
+
+  app.post('/accounts/create', async (req, res) => {
+    if ((process.env.CREATE_V2 || 'false').toLowerCase() !== 'true') return res.status(400).send('CREATE_V2 desabilitado');
+    const { email, username, password, proxy } = req.body;
+    if (!email || !username || !password) return res.status(400).send('email, username e password são obrigatórios');
+    try {
+      const result = await createWithPuppeteer({ email, username, password, proxy });
+      if (!result.success) return res.status(500).send(`Falha: ${result.error || 'erro desconhecido'}`);
+      return res.redirect('/dashboard');
+    } catch (err) {
+      return res.status(500).send(`Falha ao criar: ${err.message || err}`);
     }
   });
 

@@ -141,6 +141,32 @@
         </div>
 
         <div class="box">
+          <h3 class="title is-5">Criar conta (Puppeteer)</h3>
+          <form action="/accounts/create" method="post">
+            <p class="help">Requer CREATE_V2=true e proxies residenciais. Captcha/email não automatizados neste esqueleto.</p>
+            <div class="field">
+              <label class="label">Email</label>
+              <div class="control"><input class="input" name="email" required></div>
+            </div>
+            <div class="field">
+              <label class="label">Username</label>
+              <div class="control"><input class="input" name="username" required></div>
+            </div>
+            <div class="field">
+              <label class="label">Senha</label>
+              <div class="control"><input class="input" type="password" name="password" required></div>
+            </div>
+            <div class="field">
+              <label class="label">Proxy (opcional)</label>
+              <div class="control"><input class="input" name="proxy" placeholder="http://user:pass@ip:port"></div>
+            </div>
+            <div class="field">
+              <button class="button is-warning">Criar conta</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="box">
           <h3 class="title is-5">Mass Like</h3>
           <form action="/actions/<%= bots[0]?.username %>/like" method="post">
             <div class="field">
