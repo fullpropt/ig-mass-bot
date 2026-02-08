@@ -27,7 +27,12 @@ const buildClient = (username, proxy) => {
   const ig = new IgApiClient();
   ig.state.generateDevice(username);
   ig.state.proxyUrl = proxy || undefined;
-  ig.request.defaults.headers['User-Agent'] = randomUserAgent();
+  const ua = randomUserAgent();
+  // alguns builds não expõem defaults imediatamente; protege com checagem
+  if (ig.request?.defaults?.headers) {
+    ig.request.defaults.headers['User-Agent'] = ua;
+  }
+  ig.state.userAgent = ua;
   return ig;
 };
 
