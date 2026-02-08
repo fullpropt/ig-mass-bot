@@ -1,0 +1,2 @@
+# um proxy por linha (ex: http://user:pass@ip:port)
+# http://user:pass@1.2.3.4:3128

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>IG-MASS-BOT</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+</head>
+<body class="section">
+  <div class="container">
+    <h1 class="title">IG-MASS-BOT</h1>
+    <p class="subtitle">Ethical Instagram DM automation • Porta <%= settings.port %></p>
+    <article class="message is-danger">
+      <div class="message-header"><p>Uso ético obrigatório</p></div>
+      <div class="message-body">
+        Envie somente para contatos que deram consentimento explícito (opt-in). Violação dos termos do Instagram pode resultar em ban permanente.
+      </div>
+    </article>
+
+    <div class="box">
+      <h2 class="title is-5">Bots ativos</h2>
+      <table class="table is-fullwidth is-striped">
+        <thead><tr><th>Username</th><th>Status</th><th>Fila</th><th>Enviados</th><th>Falharam</th><th>Proxy</th><th>Ações</th></tr></thead>
+        <tbody>
+          <% bots.forEach(bot => { %>
+            <tr>
+              <td><%= bot.username %></td>
+              <td><%= bot.status %></td>
+              <td><%= bot.queued %></td>
+              <td><%= bot.stats.sent || 0 %></td>
+              <td><%= bot.stats.failed || 0 %></td>
+              <td style="max-width:160px; word-break: break-all;"><%= bot.proxy || 'none' %></td>
+              <td>
+                <form action="/bots/<%= bot.username %>/pause" method="post" style="display:inline">
+                  <button class="button is-small">Pause</button>
+                </form>
+                <form action="/bots/<%= bot.username %>/resume" method="post" style="display:inline">
+                  <button class="button is-small is-info">Resume</button>
+                </form>
+                <form action="/bots/<%= bot.username %>/stop" method="post" style="display:inline">
+                  <button class="button is-small is-danger">Stop</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="columns">
+      <div class="column">
+        <div class="box">
+          <h3 class="title is-5">Rodar .massdm</h3>
+          <form action="/bots/<%= bots[0]?.username %>/massdm" method="post" enctype="multipart/form-data">
+            <div class="field">
+              <label class="label">Bot</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select name="username" onchange="this.form.action='/bots/'+this.value+'/massdm'">
+                    <% bots.forEach(bot => { %>
+                      <option value="<%= bot.username %>"><%= bot.username %></option>
+                    <% }) %>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Template</label>
+              <div class="control"><textarea name="template" class="textarea" rows="3"><%= settings.baseMessage %></textarea></div>
+              <p class="help">Suporta {nome}, {username}, {link} e spintax {"oi|olá"}</p>
+            </div>
+            <div class="field">
+              <label class="label">Link</label>
+              <div class="control"><input class="input" name="link" value="<%= settings.defaultLink %>"></div>
+            </div>
+            <div class="field">
+              <label class="label">Lista</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select name="listPath">
+                    <% files.forEach(f => { %>
+                      <option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option>
+                    <% }) %>
+                  </select>
+                </div>
+              </div>
+              <p class="help">ou envie CSV/TXT</p>
+              <div class="control"><input type="file" name="listfile" class="file-input"></div>
+            </div>
+            <div class="field">
+              <button class="button is-primary">Iniciar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="column">
+        <div class="box">
+          <h3 class="title is-5">Adicionar bot (hot add)</h3>
+          <form action="/bots/add" method="post">
+            <div class="field">
+              <label class="label">Username</label>
+              <div class="control"><input class="input" name="username" required></div>
+            </div>
+            <div class="field">
+              <label class="label">Senha</label>
+              <div class="control"><input class="input" type="password" name="password" required></div>
+            </div>
+            <div class="field">
+              <label class="label">Proxy (opcional)</label>
+              <div class="control"><input class="input" name="proxy" placeholder="http://user:pass@ip:port"></div>
+            </div>
+            <div class="field">
+              <button class="button is-link">Adicionar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

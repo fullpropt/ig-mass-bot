@@ -1,0 +1,2 @@
+# username:password:email(optional)
+# conta1:senha1:email1@example.com

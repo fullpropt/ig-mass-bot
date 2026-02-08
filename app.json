@@ -1,0 +1,21 @@
+{
+  "name": "IG-MASS-BOT",
+  "description": "Ethical multi-account Instagram DM bot with proxies and dashboard",
+  "repository": "",
+  "env": {
+    "PROXIES_FILE": { "description": "Path to proxies.txt", "value": "./proxies.txt" },
+    "ACCOUNTS_FILE": { "description": "Path to accounts.txt", "value": "./accounts.txt" },
+    "TARGETS_FILE": { "description": "Path to targets.txt", "value": "./targets.txt" },
+    "MAX_DM_PER_DAY": { "value": "60" },
+    "DELAY_MIN": { "value": "35" },
+    "DELAY_MAX": { "value": "95" },
+    "PORT": { "value": "3000" }
+  },
+  "scripts": {
+    "postdeploy": "npm install && npm run start"
+  },
+  "formation": {
+    "web": { "quantity": 1, "size": "free" }
+  },
+  "stack": "heroku-22"
+}
