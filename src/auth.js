@@ -106,4 +106,14 @@ export const refreshCookies = (ig, username, logger = createLogger(username)) =>
   }, 15 * 60 * 1000);
 };
 
-export default { login, refreshCookies };
+export const detectActionBlock = (error) => {
+  if (!error) return false;
+  const msg = (error.message || '').toLowerCase();
+  if (error instanceof IgCheckpointError) return true;
+  return msg.includes('feedback_required')
+    || msg.includes('please wait a few minutes')
+    || msg.includes('action blocked')
+    || msg.includes('challenge_required');
+};
+
+export default { login, refreshCookies, detectActionBlock };
