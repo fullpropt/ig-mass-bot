@@ -5,7 +5,8 @@ import fs from 'fs';
 import settings from './settings.js';
 import downloader from './utils/downloader.js';
 
-const upload = multer({ dest: path.join(settings.rootDir, 'lists') });
+const uploadLists = multer({ dest: path.join(settings.rootDir, 'lists') });
+const uploadSessions = multer({ dest: settings.sessionsDir });
 
 const startServer = (manager) => {
   const app = express();
@@ -53,7 +54,7 @@ const startServer = (manager) => {
     }
   });
 
-  app.post('/bots/:username/massdm', upload.single('listfile'), async (req, res) => {
+  app.post('/bots/:username/massdm', uploadLists.single('listfile'), async (req, res) => {
     const { username } = req.params;
     const bot = manager.getBot(username);
     if (!bot) return res.status(404).send('Bot não encontrado');
@@ -68,6 +69,18 @@ const startServer = (manager) => {
     await bot.massSender.loadRecipients(listPath);
     bot.massSender.sendAll({ template, link });
     return res.redirect('/dashboard');
+  });
+
+  app.post('/sessions/upload', uploadSessions.single('sessionfile'), async (req, res) => {
+    const { username } = req.body;
+    if (!username || !req.file) return res.status(400).send('username e arquivo são obrigatórios');
+    try {
+      const targetPath = path.join(settings.sessionsDir, `${username}.json`);
+      await fs.promises.rename(req.file.path, targetPath);
+      return res.redirect('/dashboard');
+    } catch (err) {
+      return res.status(500).send(`Falha ao salvar sessão: ${err.message || err}`);
+    }
   });
 
   app.post('/bots/:username/pause', (req, res) => {

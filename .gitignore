@@ -4,3 +4,4 @@ logs
 .env
 npm-debug.log
 .pnpm-debug.log
+.ssh

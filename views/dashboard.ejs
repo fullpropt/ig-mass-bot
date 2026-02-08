@@ -114,6 +114,24 @@
             </div>
           </form>
         </div>
+
+        <div class="box">
+          <h3 class="title is-5">Importar sessão JSON</h3>
+          <form action="/sessions/upload" method="post" enctype="multipart/form-data">
+            <div class="field">
+              <label class="label">Username (igual ao arquivo)</label>
+              <div class="control"><input class="input" name="username" required></div>
+            </div>
+            <div class="field">
+              <label class="label">Arquivo de sessão (.json)</label>
+              <div class="control"><input type="file" name="sessionfile" accept=".json" required></div>
+            </div>
+            <div class="field">
+              <button class="button is-primary">Enviar sessão</button>
+            </div>
+            <p class="help">Sobrescreve sessions/&lt;username&gt;.json. Use apenas para contas com consentimento.</p>
+          </form>
+        </div>
       </div>
     </div>
   </div>
