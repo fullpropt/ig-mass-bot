@@ -1,7 +1,7 @@
 import puppeteer from 'puppeteer-extra';
 import StealthPlugin from 'puppeteer-extra-plugin-stealth';
 import axios from 'axios';
-import { Solver } from '2captcha';
+import TwoCaptcha from '2captcha';
 import settings from './settings.js';
 import { createLogger } from './utils/logger.js';
 import { saveAccounts, loadAccounts } from './utils/cryptoStore.js';
@@ -12,7 +12,7 @@ const logger = createLogger('creator');
 const genStr = (len = 8) => Math.random().toString(36).slice(2, 2 + len);
 const randUser = () => `ig${genStr(6)}_${genStr(4)}`;
 const randName = () => `Nome ${genStr(5)}`;
-const solver = new Solver(settings.captchaKey || 'COLOQUE_APIKEY');
+const solver = settings.captchaKey ? new TwoCaptcha(settings.captchaKey) : null;
 
 const getTempMail = async () => {
   if (!settings.tempMailUrl || !settings.tempMailToken) throw new Error('TEMPMAIL_API_URL/TOKEN não definidos');
@@ -78,12 +78,14 @@ export const createSingle = async (proxy) => {
     await Promise.all([page.click('button[type="submit"]'), page.waitForTimeout(4000)]);
 
     if (await page.$('iframe[src*="recaptcha"]')) {
+      if (!solver) throw new Error('Captcha detectado e CAPTCHA_API_KEY não definida');
       const sitekey = await page.$eval('iframe[src*="recaptcha"]', (f) => {
         const u = new URL(f.src);
         return u.searchParams.get('k');
       });
-      const { data } = await solver.recaptcha({ googlekey: sitekey, pageurl: page.url() });
-      await page.evaluate(`document.getElementById('g-recaptcha-response').innerHTML="${data}";`);
+      const res = await solver.recaptcha({ googlekey: sitekey, pageurl: page.url() });
+      const token = res?.data || res;
+      await page.evaluate(`document.getElementById('g-recaptcha-response').innerHTML="${token}"`);
     }
 
     const code = await waitEmailCode(client, address);
