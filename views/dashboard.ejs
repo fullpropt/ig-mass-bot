@@ -139,6 +139,81 @@
             <p class="help">Sobrescreve sessions/&lt;username&gt;.json. Use apenas para contas com consentimento.</p>
           </form>
         </div>
+
+        <div class="box">
+          <h3 class="title is-5">Mass Like</h3>
+          <form action="/actions/<%= bots[0]?.username %>/like" method="post">
+            <div class="field">
+              <label class="label">Bot</label>
+              <div class="select is-fullwidth">
+                <select name="username" onchange="this.form.action='/actions/'+this.value+'/like'">
+                  <% bots.forEach(bot => { %>
+                    <option value="<%= bot.username %>"><%= bot.username %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Lista de media IDs</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select name="listPath">
+                    <% files.forEach(f => { %>
+                      <option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option>
+                    <% }) %>
+                  </select>
+                </div>
+              </div>
+              <p class="help">Cada linha: mediaId (ex: 123456789_123456789)</p>
+            </div>
+            <div class="field">
+              <label class="label">Limite</label>
+              <div class="control"><input class="input" name="limit" type="number" value="50"></div>
+            </div>
+            <div class="field">
+              <button class="button is-primary">Rodar Mass Like</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="box">
+          <h3 class="title is-5">Mass Comment</h3>
+          <form action="/actions/<%= bots[0]?.username %>/comment" method="post">
+            <div class="field">
+              <label class="label">Bot</label>
+              <div class="select is-fullwidth">
+                <select name="username" onchange="this.form.action='/actions/'+this.value+'/comment'">
+                  <% bots.forEach(bot => { %>
+                    <option value="<%= bot.username %>"><%= bot.username %></option>
+                  <% }) %>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Lista de media IDs</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select name="listPath">
+                    <% files.forEach(f => { %>
+                      <option value="<%= path.join(settings.listsDir, f) %>"><%= f %></option>
+                    <% }) %>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label">Template do comentário</label>
+              <div class="control"><textarea class="textarea" name="template" rows="2" required>Nice post!</textarea></div>
+            </div>
+            <div class="field">
+              <label class="label">Limite</label>
+              <div class="control"><input class="input" name="limit" type="number" value="20"></div>
+            </div>
+            <div class="field">
+              <button class="button is-link">Rodar Mass Comment</button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   </div>

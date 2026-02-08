@@ -4,6 +4,7 @@ import multer from 'multer';
 import fs from 'fs';
 import settings from './settings.js';
 import downloader from './utils/downloader.js';
+import ActionsRunner from './actions.js';
 
 const uploadLists = multer({ dest: path.join(settings.rootDir, 'lists') });
 const uploadSessions = multer({ dest: settings.sessionsDir });
@@ -40,6 +41,31 @@ const startServer = (manager) => {
       proxy: bot.proxy,
     }));
     res.json(payload);
+  });
+
+  app.post('/actions/:username/like', async (req, res) => {
+    const bot = manager.getBot(req.params.username);
+    if (!bot?.ready) return res.status(400).send('Bot não pronto');
+    const { listPath, limit } = req.body;
+    try {
+      await bot.actions.massLike({ mediaListPath: listPath, limit: Number(limit) || 50 });
+      return res.redirect('/dashboard');
+    } catch (err) {
+      return res.status(500).send(`Falha no mass like: ${err.message || err}`);
+    }
+  });
+
+  app.post('/actions/:username/comment', async (req, res) => {
+    const bot = manager.getBot(req.params.username);
+    if (!bot?.ready) return res.status(400).send('Bot não pronto');
+    const { listPath, limit, template } = req.body;
+    if (!template) return res.status(400).send('Template obrigatório');
+    try {
+      await bot.actions.massComment({ mediaListPath: listPath, limit: Number(limit) || 20, template });
+      return res.redirect('/dashboard');
+    } catch (err) {
+      return res.status(500).send(`Falha no mass comment: ${err.message || err}`);
+    }
   });
 
   app.post('/bots/add', async (req, res) => {

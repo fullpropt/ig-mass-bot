@@ -4,6 +4,7 @@ import { login, loginWithCookie, refreshCookies, createAccount } from './auth.js
 import { createLogger } from './utils/logger.js';
 import MassSender from './massSender.js';
 import startServer from './server.js';
+import ActionsRunner from './actions.js';
 
 const coreLogger = createLogger('core');
 
@@ -68,6 +69,7 @@ class Bot {
     }
     refreshCookies(this.ig, this.username, this.logger);
     this.massSender = new MassSender({ ig: this.ig, username: this.username, proxyManager: this.proxyManager, assignedProxy: this.proxy, logger: this.logger });
+    this.actions = new ActionsRunner({ ig: this.ig, username: this.username, logger: this.logger });
     this.startAutoReply();
     await warmUp(this.ig, this.username, this.logger);
     this.startWarmupSchedule();
